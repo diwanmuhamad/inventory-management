@@ -24,10 +24,10 @@ class InventoryManager extends EventEmitter {
     }
 
     // Method 1: Add Product
-    async addProduct(productId, name, price, stock, category) {
+    async addProduct(name, price, stock, category) {
         try {
             // Validation
-            if (!productId || !name || !price || stock === undefined || !category) {
+            if (!name || !price || stock === undefined || !category) {
                 throw new ValidationError('All product fields are required');
             }
             if (price <= 0) {
@@ -36,6 +36,9 @@ class InventoryManager extends EventEmitter {
             if (stock < 0) {
                 throw new ValidationError('Stock cannot be negative');
             }
+
+            // Generate product ID
+            const productId = await this.generateProductId();
 
             const query = `
                 INSERT INTO products (id, name, price, stock, category) 
@@ -48,8 +51,34 @@ class InventoryManager extends EventEmitter {
             
             return { success: true, productId, name, price, stock, category };
         } catch (error) {
-            logger.error(`Error adding product: ${error.message}`, { productId, error });
+            logger.error(`Error adding product: ${error.message}`, { name, error });
             throw error;
+        }
+    }
+
+    // Helper method: Generate unique product ID
+    async generateProductId() {
+        try {
+            // Get the highest existing product ID number
+            const [rows] = await pool.execute(`
+                SELECT id FROM products 
+                WHERE id LIKE 'PROD%' 
+                ORDER BY CAST(SUBSTRING(id, 5) AS UNSIGNED) DESC 
+                LIMIT 1
+            `);
+            
+            let nextNumber = 1;
+            if (rows.length > 0) {
+                const lastId = rows[0].id;
+                const lastNumber = parseInt(lastId.substring(4)); // Remove 'PROD' prefix
+                nextNumber = lastNumber + 1;
+            }
+            
+            return `PROD${String(nextNumber).padStart(3, '0')}`;
+        } catch (error) {
+            logger.error(`Error generating product ID: ${error.message}`, { error });
+            // Fallback to timestamp-based ID
+            return `PROD${Date.now()}`;
         }
     }
 

@@ -72,7 +72,6 @@ The server will start on `http://localhost:3000`
 
 ```json
 {
-  "productId": "PROD006",
   "name": "Gaming Mouse",
   "price": 79.99,
   "stock": 20,
@@ -367,7 +366,7 @@ You can test the API using curl or any HTTP client:
 # Add a product
 curl -X POST http://localhost:3000/products \
   -H "Content-Type: application/json" \
-  -d '{"productId":"PROD006","name":"Test Product","price":99.99,"stock":50,"category":"Electronics"}'
+  -d '{"name":"Test Product","price":99.99,"stock":50,"category":"Electronics"}'
 
 # Get all products
 curl http://localhost:3000/products

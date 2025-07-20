@@ -3,7 +3,6 @@ const url = require('url');
 const { testConnection } = require('./config/database');
 const InventoryManager = require('./models/InventoryManager');
 const logger = require('./utils/logger');
-const { InventoryError } = require('./utils/errors');
 
 class InventoryServer {
     constructor() {
@@ -116,9 +115,9 @@ class InventoryServer {
     // Handle POST /products
     async handleAddProduct(req, res) {
         const body = await this.parseBody(req);
-        const { productId, name, price, stock, category } = body;
+        const { name, price, stock, category } = body;
 
-        const result = await this.inventoryManager.addProduct(productId, name, price, stock, category);
+        const result = await this.inventoryManager.addProduct(name, price, stock, category);
         this.sendResponse(res, 201, result);
     }
 
