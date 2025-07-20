@@ -2,19 +2,18 @@
 
 import { useState, useEffect } from "react";
 import {
-  TrendingUp,
-  AlertTriangle,
   Package,
   DollarSign,
-  ShoppingCart,
+  AlertTriangle,
+  TrendingDown,
+  TrendingUp,
   BarChart3,
+  Filter,
 } from "lucide-react";
-import { apiService, Product, InventoryValue } from "@/lib/api";
+import { apiService, Product } from "@/lib/api";
 
 export default function ReportsPage() {
-  const [inventoryValue, setInventoryValue] = useState<InventoryValue | null>(
-    null
-  );
+  const [inventoryValue, setInventoryValue] = useState(0);
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [threshold, setThreshold] = useState(10);
@@ -26,13 +25,13 @@ export default function ReportsPage() {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const [inventoryData, lowStockData] = await Promise.all([
+      const [inventoryRes, lowStockRes] = await Promise.all([
         apiService.getInventoryValue(),
         apiService.getLowStockProducts(threshold),
       ]);
 
-      setInventoryValue(inventoryData);
-      setLowStockProducts(lowStockData.products || []);
+      setInventoryValue(inventoryRes.totalValue || 0);
+      setLowStockProducts(lowStockRes.products || []);
     } catch (error) {
       console.error("Error fetching reports:", error);
     } finally {
@@ -40,256 +39,254 @@ export default function ReportsPage() {
     }
   };
 
+  const metrics = [
+    {
+      title: "Total Inventory Value",
+      value: `$${inventoryValue.toLocaleString()}`,
+      icon: DollarSign,
+      color: "from-green-500 to-green-600",
+      description: "Current value of all inventory",
+    },
+    {
+      title: "Low Stock Items",
+      value: lowStockProducts.length.toString(),
+      icon: AlertTriangle,
+      color: "from-orange-500 to-orange-600",
+      description: `Products with stock below ${threshold}`,
+    },
+  ];
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading reports...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="loading-spinner"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page-enter">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Reports & Analytics
-              </h1>
-              <p className="text-gray-600">Inventory insights and alerts</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Low Stock Threshold:
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={threshold}
-                  onChange={(e) => setThreshold(parseInt(e.target.value))}
-                  className="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+          Reports
+        </h1>
+        <p className="text-gray-600">Inventory analytics and insights</p>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Inventory Value Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="metric-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600">
-                  Total Inventory Value
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${inventoryValue?.totalValue?.toLocaleString() || "0"}
-                </p>
-              </div>
-              <DollarSign className="h-8 w-8 text-blue-500" />
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-600">
-                  Total Products
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {inventoryValue?.totalProducts || 0}
-                </p>
-              </div>
-              <Package className="h-8 w-8 text-green-500" />
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-600">
-                  Total Items
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {inventoryValue?.totalItems || 0}
-                </p>
-              </div>
-              <ShoppingCart className="h-8 w-8 text-purple-500" />
-            </div>
-          </div>
-        </div>
-
-        {/* Low Stock Alert */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Low Stock Alert
-                </h2>
-                <p className="text-gray-600">
-                  Products with stock below {threshold} units
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-red-600">
-                {lowStockProducts.length}
-              </div>
-              <div className="text-sm text-gray-500">Products</div>
-            </div>
-          </div>
-
-          {lowStockProducts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {lowStockProducts.map((product) => (
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {metrics.map((metric, index) => {
+          const Icon = metric.icon;
+          return (
+            <div
+              key={metric.title}
+              className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 backdrop-blur-xl rounded-2xl p-6 border border-white/30 shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className="flex items-center justify-between mb-4">
                 <div
-                  key={product.id}
-                  className="bg-red-50 border border-red-200 rounded-lg p-4 hover:bg-red-100 transition-colors"
+                  className={`w-12 h-12 bg-gradient-to-r ${metric.color} rounded-xl flex items-center justify-center`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">
-                        {product.name}
-                      </h3>
-                      <p className="text-sm text-gray-600">ID: {product.id}</p>
-                      <p className="text-sm text-gray-600">
-                        Category: {product.category}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-red-600">
-                        {product.stock}
-                      </div>
-                      <div className="text-xs text-red-500">units left</div>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-red-200">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Price:</span>
-                      <span className="font-medium text-gray-900">
-                        ${product.price.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm mt-1">
-                      <span className="text-gray-600">Value:</span>
-                      <span className="font-medium text-gray-900">
-                        ${(product.price * product.stock).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
+                  <Icon className="w-6 h-6 text-white" />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="h-6 w-6 text-green-600" />
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900">
+                    {metric.value}
+                  </p>
+                  <p className="text-sm text-gray-600">{metric.title}</p>
+                </div>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                All Good!
+              <p className="text-sm text-gray-500">{metric.description}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Inventory Value Report */}
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Inventory Value Overview
+            </h2>
+            <p className="text-gray-600">
+              Comprehensive view of your inventory&apos;s total value
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <TrendingUp className="w-5 h-5 text-green-500" />
+            <span className="text-sm text-green-600 font-medium">
+              ${inventoryValue.toLocaleString()}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+            <div className="flex items-center space-x-3 mb-3">
+              <DollarSign className="w-6 h-6 text-green-600" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Total Value
               </h3>
-              <p className="text-gray-600">
-                No products are below the low stock threshold of {threshold}{" "}
-                units.
-              </p>
             </div>
-          )}
-        </div>
-
-        {/* Stock Distribution Chart */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Stock Distribution
-              </h2>
-              <p className="text-gray-600">
-                Overview of inventory levels across categories
-              </p>
-            </div>
+            <p className="text-3xl font-bold text-green-600">
+              ${inventoryValue.toLocaleString()}
+            </p>
+            <p className="text-sm text-gray-600 mt-2">
+              Combined value of all products in stock
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600">
-                    Healthy Stock
-                  </p>
-                  <p className="text-2xl font-bold text-green-700">
-                    {(inventoryValue?.totalProducts || 0) -
-                      lowStockProducts.length}
-                  </p>
-                </div>
-                <div className="h-8 w-8 rounded-full bg-green-200 flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                </div>
-              </div>
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+            <div className="flex items-center space-x-3 mb-3">
+              <Package className="w-6 h-6 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Product Count
+              </h3>
             </div>
+            <p className="text-3xl font-bold text-blue-600">
+              {lowStockProducts.length}
+            </p>
+            <p className="text-sm text-gray-600 mt-2">
+              Total number of products in inventory
+            </p>
+          </div>
+        </div>
+      </div>
 
-            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-red-600">Low Stock</p>
-                  <p className="text-2xl font-bold text-red-700">
-                    {lowStockProducts.length}
-                  </p>
-                </div>
-                <div className="h-8 w-8 rounded-full bg-red-200 flex items-center justify-center">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600">
-                    Total Value
-                  </p>
-                  <p className="text-2xl font-bold text-blue-700">
-                    ${inventoryValue?.totalValue?.toLocaleString() || "0"}
-                  </p>
-                </div>
-                <div className="h-8 w-8 rounded-full bg-blue-200 flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 text-blue-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-purple-600">
-                    Total Items
-                  </p>
-                  <p className="text-2xl font-bold text-purple-700">
-                    {inventoryValue?.totalItems || 0}
-                  </p>
-                </div>
-                <div className="h-8 w-8 rounded-full bg-purple-200 flex items-center justify-center">
-                  <ShoppingCart className="h-4 w-4 text-purple-600" />
-                </div>
-              </div>
+      {/* Low Stock Report */}
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Low Stock Alert
+            </h2>
+            <p className="text-gray-600">
+              Products that need restocking attention
+            </p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Filter className="w-5 h-5 text-gray-500" />
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700">
+                Threshold:
+              </label>
+              <input
+                type="number"
+                value={threshold}
+                onChange={(e) => setThreshold(parseInt(e.target.value))}
+                className="bg-white/70 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 w-20"
+                min="1"
+                max="100"
+              />
             </div>
           </div>
         </div>
+
+        {lowStockProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <TrendingUp className="w-12 h-12 text-green-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              All Good!
+            </h3>
+            <p className="text-gray-600">
+              No products are below the current threshold of {threshold} units.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="bg-white/50 backdrop-blur-sm text-gray-700 font-semibold px-6 py-4 text-left border-b border-white/30">
+                    Product
+                  </th>
+                  <th className="bg-white/50 backdrop-blur-sm text-gray-700 font-semibold px-6 py-4 text-left border-b border-white/30">
+                    Category
+                  </th>
+                  <th className="bg-white/50 backdrop-blur-sm text-gray-700 font-semibold px-6 py-4 text-left border-b border-white/30">
+                    Current Stock
+                  </th>
+                  <th className="bg-white/50 backdrop-blur-sm text-gray-700 font-semibold px-6 py-4 text-left border-b border-white/30">
+                    Unit Price
+                  </th>
+                  <th className="bg-white/50 backdrop-blur-sm text-gray-700 font-semibold px-6 py-4 text-left border-b border-white/30">
+                    Stock Value
+                  </th>
+                  <th className="bg-white/50 backdrop-blur-sm text-gray-700 font-semibold px-6 py-4 text-left border-b border-white/30">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {lowStockProducts.map((product) => (
+                  <tr
+                    key={product.id}
+                    className="hover:bg-white/30 transition-colors duration-200"
+                  >
+                    <td className="px-6 py-4 border-b border-white/20">
+                      <div className="flex items-center space-x-2">
+                        <Package className="w-4 h-4 text-blue-500" />
+                        <span className="font-medium">{product.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 border-b border-white/20">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {product.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 border-b border-white/20">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          product.stock === 0
+                            ? "bg-red-100 text-red-800"
+                            : product.stock < 5
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {product.stock} units
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 border-b border-white/20 font-semibold text-gray-600">
+                      ${product.price.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 border-b border-white/20 font-bold text-green-600">
+                      ${(product.price * product.stock).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 border-b border-white/20">
+                      <div className="flex items-center space-x-2">
+                        {product.stock === 0 ? (
+                          <>
+                            <TrendingDown className="w-4 h-4 text-red-500" />
+                            <span className="text-sm text-red-600 font-medium">
+                              Out of Stock
+                            </span>
+                          </>
+                        ) : product.stock < 5 ? (
+                          <>
+                            <AlertTriangle className="w-4 h-4 text-orange-500" />
+                            <span className="text-sm text-orange-600 font-medium">
+                              Critical
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                            <span className="text-sm text-yellow-600 font-medium">
+                              Low
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -108,6 +108,8 @@ class InventoryServer {
                 await this.handleGetCategorySales(req, res, query);
             } else if (path === '/reports/top-products' && method === 'GET') {
                 await this.handleGetTopProducts(req, res, query);
+            } else if (path === '/debug/sales-count' && method === 'GET') {
+                await this.handleDebugSalesCount(req, res);
             } else if (path.match(/^\/products\/[^\/]+\/history$/) && method === 'GET') {
                 await this.handleGetProductHistory(req, res);
             } else if (path === '/categories' && method === 'GET') {
@@ -289,6 +291,19 @@ class InventoryServer {
                 report: 'top_products',
                 data: result,
                 generated_at: new Date().toISOString()
+            });
+        } catch (error) {
+            this.sendError(res, error);
+        }
+    }
+
+    // Handle GET /debug/sales-count
+    async handleDebugSalesCount(req, res) {
+        try {
+            const count = await this.inventoryManager.getSalesCount();
+            this.sendResponse(res, 200, {
+                message: 'Sales count retrieved successfully',
+                count: count
             });
         } catch (error) {
             this.sendError(res, error);

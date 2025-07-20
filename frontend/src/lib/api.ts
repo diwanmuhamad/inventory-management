@@ -101,6 +101,10 @@ export const apiService = {
     return response.data;
   },
 
+  async deleteProduct(id: string): Promise<void> {
+    await api.delete(`/products/${id}`);
+  },
+
   // Transactions
   async getTransactions(
     page = 1,
@@ -195,6 +199,12 @@ export const apiService = {
   // Health check
   async healthCheck() {
     const response = await api.get("/health");
+    return response.data;
+  },
+
+  // Debug: Get sales count
+  async getSalesCount() {
+    const response = await api.get("/debug/sales-count");
     return response.data;
   },
 };

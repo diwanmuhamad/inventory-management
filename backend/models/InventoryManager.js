@@ -654,6 +654,57 @@ class InventoryManager extends EventEmitter {
             throw error;
         }
     }
+
+    // Debug method: Get count of products with sales
+    async getSalesCount() {
+        try {
+            const query = `
+                SELECT 
+                    COUNT(DISTINCT p.id) as product_count,
+                    COUNT(t.id) as transaction_count,
+                    SUM(t.final_amount) as total_sales
+                FROM products p
+                LEFT JOIN transactions t ON p.id = t.product_id AND t.type = 'sale'
+            `;
+            
+            const [rows] = await pool.execute(query);
+            const result = rows[0];
+
+            // Get detailed breakdown
+            const detailedQuery = `
+                SELECT 
+                    p.name,
+                    p.id,
+                    COUNT(t.id) as sales_count,
+                    SUM(t.final_amount) as total_sales,
+                    SUM(t.quantity) as quantity_sold
+                FROM products p
+                LEFT JOIN transactions t ON p.id = t.product_id AND t.type = 'sale'
+                GROUP BY p.id, p.name
+                HAVING sales_count > 0
+                ORDER BY total_sales DESC
+            `;
+            
+            const [detailedRows] = await pool.execute(detailedQuery);
+
+            return {
+                totalProducts: result.product_count,
+                productsWithSales: detailedRows.length,
+                totalTransactions: result.transaction_count,
+                totalSales: parseFloat(result.total_sales) || 0,
+                products: detailedRows.map(row => ({
+                    name: row.name,
+                    id: row.id,
+                    salesCount: row.sales_count,
+                    totalSales: parseFloat(row.total_sales) || 0,
+                    quantitySold: parseInt(row.quantity_sold) || 0
+                }))
+            };
+        } catch (error) {
+            logger.error(`Error getting sales count: ${error.message}`, { error });
+            throw error;
+        }
+    }
 }
 
 module.exports = InventoryManager; 
