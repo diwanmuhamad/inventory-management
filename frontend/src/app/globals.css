@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+  }
+  
+  .metric-card {
+    @apply bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100;
+  }
+  
+  .chart-container {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+  }
+}
