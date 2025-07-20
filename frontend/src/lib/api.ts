@@ -123,6 +123,40 @@ export const apiService = {
     return response.data.data;
   },
 
+  async getMonthlySales(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+
+    const response = await api.get(
+      `/reports/monthly-sales?${params.toString()}`
+    );
+    return response.data.data;
+  },
+
+  async getCategorySales(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+
+    const response = await api.get(
+      `/reports/category-sales?${params.toString()}`
+    );
+    return response.data.data;
+  },
+
+  async getTopProducts(startDate?: string, endDate?: string, limit?: number) {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    if (limit) params.append("limit", limit.toString());
+
+    const response = await api.get(
+      `/reports/top-products?${params.toString()}`
+    );
+    return response.data.data;
+  },
+
   // Categories
   async getCategories(): Promise<{ categories: string[] }> {
     const response = await api.get("/categories");

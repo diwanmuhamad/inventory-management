@@ -500,6 +500,115 @@ class InventoryManager extends EventEmitter {
             throw error;
         }
     }
+
+    // Get monthly sales data
+    async getMonthlySales(startDate = null, endDate = null) {
+        try {
+            let dateFilter = '';
+            let params = [];
+            
+            if (startDate && endDate) {
+                dateFilter = 'WHERE created_at BETWEEN ? AND ?';
+                params = [startDate, endDate];
+            }
+            
+            const query = `
+                SELECT 
+                    DATE_FORMAT(created_at, '%Y-%m') as month,
+                    SUM(final_amount) as sales
+                FROM transactions 
+                ${dateFilter}
+                GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+                ORDER BY month ASC
+            `;
+            
+            const [rows] = await pool.execute(query, params);
+            
+            return rows.map(row => ({
+                month: row.month,
+                sales: parseFloat(row.sales)
+            }));
+        } catch (error) {
+            logger.error(`Error getting monthly sales: ${error.message}`, { startDate, endDate, error });
+            throw error;
+        }
+    }
+
+    // Get sales by category
+    async getCategorySales(startDate = null, endDate = null) {
+        try {
+            let dateFilter = '';
+            let params = [];
+            
+            if (startDate && endDate) {
+                dateFilter = 'AND t.created_at BETWEEN ? AND ?';
+                params = [startDate, endDate];
+            }
+            
+            const query = `
+                SELECT 
+                    p.category,
+                    SUM(t.final_amount) as sales,
+                    COUNT(*) as transaction_count
+                FROM transactions t
+                JOIN products p ON t.product_id = p.id
+                WHERE t.type = 'sale' ${dateFilter}
+                GROUP BY p.category
+                ORDER BY sales DESC
+            `;
+            
+            const [rows] = await pool.execute(query, params);
+            
+            const totalSales = rows.reduce((sum, row) => sum + parseFloat(row.sales), 0);
+            
+            return rows.map(row => ({
+                category: row.category,
+                sales: parseFloat(row.sales),
+                percentage: totalSales > 0 ? Math.round((parseFloat(row.sales) / totalSales) * 100) : 0
+            }));
+        } catch (error) {
+            logger.error(`Error getting category sales: ${error.message}`, { startDate, endDate, error });
+            throw error;
+        }
+    }
+
+    // Get top selling products
+    async getTopProducts(startDate = null, endDate = null, limit = 10) {
+        try {
+            let dateFilter = '';
+            let params = [];
+            
+            if (startDate && endDate) {
+                dateFilter = 'AND t.created_at BETWEEN ? AND ?';
+                params = [startDate, endDate];
+            }
+            
+            const query = `
+                SELECT 
+                    p.name,
+                    p.id,
+                    SUM(t.final_amount) as sales,
+                    SUM(t.quantity) as quantity_sold
+                FROM transactions t
+                JOIN products p ON t.product_id = p.id
+                WHERE t.type = 'sale' ${dateFilter}
+                GROUP BY p.id, p.name
+                ORDER BY sales DESC
+                LIMIT ${limit}
+            `;
+            
+            const [rows] = await pool.execute(query, params);
+            
+            return rows.map(row => ({
+                name: row.name,
+                sales: parseFloat(row.sales),
+                quantity: parseInt(row.quantity_sold)
+            }));
+        } catch (error) {
+            logger.error(`Error getting top products: ${error.message}`, { startDate, endDate, limit, error });
+            throw error;
+        }
+    }
 }
 
 module.exports = InventoryManager; 

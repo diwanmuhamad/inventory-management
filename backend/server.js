@@ -100,6 +100,12 @@ class InventoryServer {
                 await this.handleGetInventoryReport(req, res);
             } else if (path === '/reports/low-stock' && method === 'GET') {
                 await this.handleGetLowStockReport(req, res, query);
+            } else if (path === '/reports/monthly-sales' && method === 'GET') {
+                await this.handleGetMonthlySales(req, res, query);
+            } else if (path === '/reports/category-sales' && method === 'GET') {
+                await this.handleGetCategorySales(req, res, query);
+            } else if (path === '/reports/top-products' && method === 'GET') {
+                await this.handleGetTopProducts(req, res, query);
             } else if (path.match(/^\/products\/[^\/]+\/history$/) && method === 'GET') {
                 await this.handleGetProductHistory(req, res);
             } else if (path === '/categories' && method === 'GET') {
@@ -191,6 +197,58 @@ class InventoryServer {
             const categories = rows.map(row => row.category);
             
             this.sendResponse(res, 200, { categories });
+        } catch (error) {
+            this.sendError(res, error);
+        }
+    }
+
+    // Handle GET /reports/monthly-sales
+    async handleGetMonthlySales(req, res, query) {
+        try {
+            const startDate = query.startDate || null;
+            const endDate = query.endDate || null;
+            
+            const result = await this.inventoryManager.getMonthlySales(startDate, endDate);
+            this.sendResponse(res, 200, {
+                report: 'monthly_sales',
+                data: result,
+                generated_at: new Date().toISOString()
+            });
+        } catch (error) {
+            this.sendError(res, error);
+        }
+    }
+
+    // Handle GET /reports/category-sales
+    async handleGetCategorySales(req, res, query) {
+        try {
+            const startDate = query.startDate || null;
+            const endDate = query.endDate || null;
+            
+            const result = await this.inventoryManager.getCategorySales(startDate, endDate);
+            this.sendResponse(res, 200, {
+                report: 'category_sales',
+                data: result,
+                generated_at: new Date().toISOString()
+            });
+        } catch (error) {
+            this.sendError(res, error);
+        }
+    }
+
+    // Handle GET /reports/top-products
+    async handleGetTopProducts(req, res, query) {
+        try {
+            const startDate = query.startDate || null;
+            const endDate = query.endDate || null;
+            const limit = parseInt(query.limit) || 10;
+            
+            const result = await this.inventoryManager.getTopProducts(startDate, endDate, limit);
+            this.sendResponse(res, 200, {
+                report: 'top_products',
+                data: result,
+                generated_at: new Date().toISOString()
+            });
         } catch (error) {
             this.sendError(res, error);
         }

@@ -31,8 +31,8 @@ import {
 
 export default function Dashboard() {
   const [dateRange, setDateRange] = useState({
-    startDate: format(startOfMonth(subMonths(new Date(), 6)), "yyyy-MM-dd"),
-    endDate: format(endOfMonth(new Date()), "yyyy-MM-dd"),
+    startDate: "2024-01-01",
+    endDate: "2024-12-31",
   });
   const [inventoryValue, setInventoryValue] = useState<InventoryValue | null>(
     null
@@ -40,38 +40,16 @@ export default function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [monthlySales, setMonthlySales] = useState<
+    { month: string; sales: number }[]
+  >([]);
+  const [categorySales, setCategorySales] = useState<
+    { category: string; sales: number; percentage: number }[]
+  >([]);
+  const [topProducts, setTopProducts] = useState<
+    { name: string; sales: number; quantity: number }[]
+  >([]);
   const [loading, setLoading] = useState(true);
-
-  // Mock data for demonstration (since backend doesn't have date filtering yet)
-  const mockMonthlySales = [
-    { month: "Jan", sales: 45000 },
-    { month: "Feb", sales: 52000 },
-    { month: "Mar", sales: 48000 },
-    { month: "Apr", sales: 61000 },
-    { month: "May", sales: 55000 },
-    { month: "Jun", sales: 67000 },
-    { month: "Jul", sales: 72000 },
-    { month: "Aug", sales: 68000 },
-    { month: "Sep", sales: 75000 },
-    { month: "Oct", sales: 82000 },
-    { month: "Nov", sales: 78000 },
-    { month: "Dec", sales: 85000 },
-  ];
-
-  const mockCategorySales = [
-    { category: "Electronics", sales: 450000, percentage: 45 },
-    { category: "Furniture", sales: 280000, percentage: 28 },
-    { category: "Appliances", sales: 180000, percentage: 18 },
-    { category: "Others", sales: 90000, percentage: 9 },
-  ];
-
-  const mockTopProducts = [
-    { name: "Laptop Dell XPS 13", sales: 125000, quantity: 96 },
-    { name: "iPhone 15 Pro", sales: 98000, quantity: 98 },
-    { name: "Office Chair", sales: 75000, quantity: 375 },
-    { name: "Coffee Maker", sales: 45000, quantity: 500 },
-    { name: "Wireless Mouse", sales: 32000, quantity: 1067 },
-  ];
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
@@ -79,17 +57,28 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [inventoryData, productsData, categoriesData] = await Promise.all(
-          [
-            apiService.getInventoryValue(),
-            apiService.getProducts(1, 100),
-            apiService.getCategories(),
-          ]
-        );
+        const [
+          inventoryData,
+          productsData,
+          categoriesData,
+          monthlyData,
+          categoryData,
+          topData,
+        ] = await Promise.all([
+          apiService.getInventoryValue(),
+          apiService.getProducts(1, 100),
+          apiService.getCategories(),
+          apiService.getMonthlySales(dateRange.startDate, dateRange.endDate),
+          apiService.getCategorySales(dateRange.startDate, dateRange.endDate),
+          apiService.getTopProducts(dateRange.startDate, dateRange.endDate, 10),
+        ]);
 
         setInventoryValue(inventoryData);
         setProducts(productsData.products || []);
         setCategories(categoriesData.categories);
+        setMonthlySales(monthlyData);
+        setCategorySales(categoryData);
+        setTopProducts(topData);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -98,7 +87,7 @@ export default function Dashboard() {
     };
 
     fetchData();
-  }, []);
+  }, [dateRange]);
 
   if (loading) {
     return (
@@ -226,7 +215,7 @@ export default function Dashboard() {
               <TrendingUp className="h-5 w-5 text-blue-500" />
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockMonthlySales}>
+              <LineChart data={monthlySales}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -255,7 +244,7 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <RechartsPieChart>
                 <Pie
-                  data={mockCategorySales}
+                  data={categorySales}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -266,7 +255,7 @@ export default function Dashboard() {
                   fill="#8884d8"
                   dataKey="sales"
                 >
-                  {mockCategorySales.map((entry, index) => (
+                  {categorySales.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
@@ -308,7 +297,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {mockTopProducts.map((product, index) => (
+                {topProducts.map((product, index) => (
                   <tr
                     key={product.name}
                     className="border-b border-gray-100 hover:bg-gray-50"
