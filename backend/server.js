@@ -112,6 +112,8 @@ class InventoryServer {
                 await this.handleGetProductHistory(req, res);
             } else if (path === '/categories' && method === 'GET') {
                 await this.handleGetCategories(req, res);
+            } else if (path === '/customers' && method === 'GET') {
+                await this.handleGetCustomers(req, res);
             } else if (path === '/health' && method === 'GET') {
                 this.sendResponse(res, 200, { status: 'OK', timestamp: new Date().toISOString() });
             } else {
@@ -165,11 +167,23 @@ class InventoryServer {
 
     // Handle POST /transactions
     async handleCreateTransaction(req, res) {
-        const body = await this.parseBody(req);
-        const { transactionId, productId, quantity, type, customerId } = body;
-
-        const result = await this.inventoryManager.createTransaction(transactionId, productId, quantity, type, customerId);
-        this.sendResponse(res, 201, result);
+        try {
+            const body = await this.parseBody(req);
+            
+            // Generate transaction ID if not provided
+            const transactionId = body.transactionId || `TXN${Date.now()}`;
+            
+            const result = await this.inventoryManager.createTransaction(
+                transactionId,
+                body.productId,
+                body.quantity,
+                body.type,
+                body.customerId
+            );
+            this.sendResponse(res, 201, result);
+        } catch (error) {
+            this.sendError(res, error);
+        }
     }
 
     // Handle GET /reports/inventory
@@ -212,6 +226,18 @@ class InventoryServer {
             const categories = rows.map(row => row.category);
             
             this.sendResponse(res, 200, { categories });
+        } catch (error) {
+            this.sendError(res, error);
+        }
+    }
+
+    // Handle GET /customers
+    async handleGetCustomers(req, res) {
+        try {
+            const { pool } = require('./config/database');
+            const [rows] = await pool.execute('SELECT * FROM customers ORDER BY name');
+            
+            this.sendResponse(res, 200, { customers: rows });
         } catch (error) {
             this.sendError(res, error);
         }

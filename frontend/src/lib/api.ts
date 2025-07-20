@@ -41,11 +41,14 @@ export interface TransactionCreate {
   customerId?: string;
   quantity: number;
   type: "purchase" | "sale";
-  unitPrice: number;
-  totalAmount: number;
-  discountPercentage: number;
-  discountAmount: number;
-  finalAmount: number;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  category: "regular" | "premium" | "vip";
 }
 
 export interface InventoryValue {
@@ -180,6 +183,12 @@ export const apiService = {
   // Categories
   async getCategories(): Promise<{ categories: string[] }> {
     const response = await api.get("/categories");
+    return response.data;
+  },
+
+  // Customers
+  async getCustomers(): Promise<{ customers: Customer[] }> {
+    const response = await api.get("/customers");
     return response.data;
   },
 

@@ -12,9 +12,18 @@ import {
 } from "lucide-react";
 import { apiService, Product, Transaction } from "@/lib/api";
 
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  category: "regular" | "premium" | "vip";
+}
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,16 +38,15 @@ export default function TransactionsPage() {
   });
   const [newTransaction, setNewTransaction] = useState({
     productId: "",
-    customerId: "CUST001", // Default customer
+    customerId: "", // No default customer
     quantity: "",
     type: "sale",
-    unitPrice: "",
-    discountPercentage: "0",
   });
 
   useEffect(() => {
     fetchTransactions();
     fetchProducts();
+    fetchCustomers();
   }, [currentPage]);
 
   const fetchTransactions = async () => {
@@ -63,6 +71,15 @@ export default function TransactionsPage() {
     }
   };
 
+  const fetchCustomers = async () => {
+    try {
+      const response = await apiService.getCustomers();
+      setCustomers(response.customers || []);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    }
+  };
+
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -71,33 +88,19 @@ export default function TransactionsPage() {
       );
       if (!selectedProduct) return;
 
-      const totalAmount =
-        parseFloat(newTransaction.unitPrice) *
-        parseInt(newTransaction.quantity);
-      const discountAmount =
-        totalAmount * (parseFloat(newTransaction.discountPercentage) / 100);
-      const finalAmount = totalAmount - discountAmount;
-
       await apiService.createTransaction({
         productId: newTransaction.productId,
         customerId: newTransaction.customerId,
         quantity: parseInt(newTransaction.quantity),
         type: newTransaction.type as "sale" | "purchase",
-        unitPrice: parseFloat(newTransaction.unitPrice),
-        totalAmount,
-        discountPercentage: parseFloat(newTransaction.discountPercentage),
-        discountAmount,
-        finalAmount,
       });
 
       setShowAddModal(false);
       setNewTransaction({
         productId: "",
-        customerId: "CUST001",
+        customerId: "",
         quantity: "",
         type: "sale",
-        unitPrice: "",
-        discountPercentage: "0",
       });
       fetchTransactions();
     } catch (error) {
@@ -363,6 +366,29 @@ export default function TransactionsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
+                      Customer
+                    </label>
+                    <select
+                      value={newTransaction.customerId}
+                      onChange={(e) =>
+                        setNewTransaction((prev) => ({
+                          ...prev,
+                          customerId: e.target.value,
+                        }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                    >
+                      <option value="">Select Customer (Optional)</option>
+                      {customers.map((customer) => (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.name} - {customer.category} (
+                          {customer.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
                       Transaction Type
                     </label>
                     <select
@@ -392,43 +418,6 @@ export default function TransactionsPage() {
                         setNewTransaction((prev) => ({
                           ...prev,
                           quantity: e.target.value,
-                        }))
-                      }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Unit Price
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={newTransaction.unitPrice}
-                      onChange={(e) =>
-                        setNewTransaction((prev) => ({
-                          ...prev,
-                          unitPrice: e.target.value,
-                        }))
-                      }
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Discount Percentage
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={newTransaction.discountPercentage}
-                      onChange={(e) =>
-                        setNewTransaction((prev) => ({
-                          ...prev,
-                          discountPercentage: e.target.value,
                         }))
                       }
                       className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
