@@ -609,6 +609,51 @@ class InventoryManager extends EventEmitter {
             throw error;
         }
     }
+
+    // Get all transactions with pagination
+    async getAllTransactions(page = 1, limit = 10) {
+        try {
+            const pageNum = parseInt(page) || 1;
+            const limitNum = parseInt(limit) || 10;
+            const offset = (pageNum - 1) * limitNum;
+            
+            const query = `
+                SELECT 
+                    t.*,
+                    p.name as product_name,
+                    c.name as customer_name,
+                    c.category as customer_category
+                FROM transactions t
+                LEFT JOIN products p ON t.product_id = p.id
+                LEFT JOIN customers c ON t.customer_id = c.id
+                ORDER BY t.created_at DESC
+                LIMIT ${limitNum} OFFSET ${offset}
+            `;
+            
+            const countQuery = 'SELECT COUNT(*) as total FROM transactions';
+            
+            const [rows] = await pool.execute(query);
+            const [countRows] = await pool.execute(countQuery);
+            
+            const total = countRows[0].total;
+            const totalPages = Math.ceil(total / limitNum);
+
+            return {
+                history: rows,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total,
+                    totalPages,
+                    hasNext: pageNum < totalPages,
+                    hasPrev: pageNum > 1
+                }
+            };
+        } catch (error) {
+            logger.error(`Error getting all transactions: ${error.message}`, { page, limit, error });
+            throw error;
+        }
+    }
 }
 
 module.exports = InventoryManager; 

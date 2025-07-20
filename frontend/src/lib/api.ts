@@ -27,11 +27,25 @@ export interface Transaction {
   type: "purchase" | "sale";
   unit_price: number;
   total_amount: number;
+  discount_percentage: number;
+  discount_amount: number;
   final_amount: number;
   created_at: string;
   product_name?: string;
   customer_name?: string;
   customer_category?: string;
+}
+
+export interface TransactionCreate {
+  productId: string;
+  customerId?: string;
+  quantity: number;
+  type: "purchase" | "sale";
+  unitPrice: number;
+  totalAmount: number;
+  discountPercentage: number;
+  discountAmount: number;
+  finalAmount: number;
 }
 
 export interface InventoryValue {
@@ -85,13 +99,19 @@ export const apiService = {
   },
 
   // Transactions
-  async createTransaction(data: {
-    transactionId: string;
-    productId: string;
-    quantity: number;
-    type: "purchase" | "sale";
-    customerId?: string;
-  }) {
+  async getTransactions(
+    page = 1,
+    limit = 10
+  ): Promise<PaginatedResponse<Transaction>> {
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+
+    const response = await api.get(`/transactions?${params.toString()}`);
+    return response.data;
+  },
+
+  async createTransaction(data: TransactionCreate) {
     const response = await api.post("/transactions", data);
     return response.data;
   },

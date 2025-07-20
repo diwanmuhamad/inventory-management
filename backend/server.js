@@ -94,6 +94,8 @@ class InventoryServer {
                 await this.handleGetProducts(req, res, query);
             } else if (path.match(/^\/products\/[^\/]+$/) && method === 'PUT') {
                 await this.handleUpdateProduct(req, res);
+            } else if (path === '/transactions' && method === 'GET') {
+                await this.handleGetTransactions(req, res, query);
             } else if (path === '/transactions' && method === 'POST') {
                 await this.handleCreateTransaction(req, res);
             } else if (path === '/reports/inventory' && method === 'GET') {
@@ -146,6 +148,19 @@ class InventoryServer {
 
         const result = await this.inventoryManager.updateProduct(productId, body);
         this.sendResponse(res, 200, result);
+    }
+
+    // Handle GET /transactions
+    async handleGetTransactions(req, res, query) {
+        try {
+            const page = parseInt(query.page) || 1;
+            const limit = parseInt(query.limit) || 10;
+            
+            const result = await this.inventoryManager.getAllTransactions(page, limit);
+            this.sendResponse(res, 200, result);
+        } catch (error) {
+            this.sendError(res, error);
+        }
     }
 
     // Handle POST /transactions
