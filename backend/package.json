@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "mysql2": "^3.6.5",
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.2",
+    "dotenv": "^16.3.1"
   },
   "keywords": ["inventory", "management", "api"],
   "author": "",

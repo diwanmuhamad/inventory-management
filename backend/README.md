@@ -35,15 +35,20 @@ A complete Node.js backend implementation for an Inventory Management System usi
    npm install
    ```
 
-3. **Configure database**
+3. **Configure environment variables**
 
-   - Update `config/database.js` with your MySQL credentials
-   - Default configuration:
-     ```javascript
-     host: 'localhost',
-     user: 'root',
-     password: '', // Change this to your MySQL password
-     database: 'inventory_manager'
+   - Update the `.env` file with your MySQL credentials:
+
+     ```bash
+     # Server Configuration
+     PORT=3000
+
+     # Database Configuration
+     DB_HOST=localhost
+     DB_USER=root
+     DB_PASSWORD=your_mysql_password_here
+     DB_NAME=inventory_manager
+     DB_PORT=3306
      ```
 
 4. **Setup database**
@@ -400,12 +405,22 @@ backend/
 
 ## Environment Variables
 
+The application uses the following environment variables (configured in `.env` file):
+
 - `PORT` - Server port (default: 3000)
-- Database configuration in `config/database.js`
+- `DB_HOST` - Database host (default: localhost)
+- `DB_USER` - Database username (default: root)
+- `DB_PASSWORD` - Database password
+- `DB_NAME` - Database name (default: inventory_manager)
+- `DB_PORT` - Database port (default: 3306)
+- `DB_CONNECTION_LIMIT` - Connection pool limit (default: 10)
+- `DB_QUEUE_LIMIT` - Connection queue limit (default: 0)
+- `NODE_ENV` - Application environment (default: development)
 
 ## Security Notes
 
-- Update database credentials in `config/database.js`
+- Update database credentials in `.env` file
+- Never commit `.env` file to version control
 - Consider implementing authentication for production use
 - Validate all input data (already implemented)
 - Use HTTPS in production

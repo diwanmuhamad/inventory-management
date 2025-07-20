@@ -233,10 +233,10 @@ class InventoryManager extends EventEmitter {
                 SELECT * FROM products 
                 WHERE category = ? 
                 ORDER BY name 
-                LIMIT ? OFFSET ?
+                LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
             `;
             
-            const [rows] = await pool.execute(query, [category, limit, offset]);
+            const [rows] = await pool.execute(query, [category]);
             
             // Get total count for pagination
             const [countRows] = await pool.execute(
@@ -315,10 +315,10 @@ class InventoryManager extends EventEmitter {
                 LEFT JOIN customers c ON t.customer_id = c.id
                 WHERE t.product_id = ?
                 ORDER BY t.created_at DESC
-                LIMIT ? OFFSET ?
+                LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
             `;
             
-            const [rows] = await pool.execute(query, [productId, limit, offset]);
+            const [rows] = await pool.execute(query, [productId]);
             
             // Get total count for pagination
             const [countRows] = await pool.execute(
@@ -396,7 +396,11 @@ class InventoryManager extends EventEmitter {
     // Additional method: Get all products with pagination
     async getAllProducts(page = 1, limit = 10, category = null) {
         try {
-            const offset = (page - 1) * limit;
+            // Ensure parameters are numbers
+            const pageNum = parseInt(page) || 1;
+            const limitNum = parseInt(limit) || 10;
+            const offset = (pageNum - 1) * limitNum;
+            
             let query = 'SELECT * FROM products';
             let countQuery = 'SELECT COUNT(*) as total FROM products';
             let params = [];
@@ -409,24 +413,27 @@ class InventoryManager extends EventEmitter {
                 countParams.push(category);
             }
 
-            query += ' ORDER BY name LIMIT ? OFFSET ?';
-            params.push(limit, offset);
+            query += ` ORDER BY name LIMIT ${limitNum} OFFSET ${offset}`;
+
+            // Debug logging
+            logger.debug(`Query: ${query}`, { params, pageNum, limitNum, category });
+            logger.debug(`Count Query: ${countQuery}`, { countParams });
 
             const [rows] = await pool.execute(query, params);
             const [countRows] = await pool.execute(countQuery, countParams);
             
             const total = countRows[0].total;
-            const totalPages = Math.ceil(total / limit);
+            const totalPages = Math.ceil(total / limitNum);
 
             return {
                 products: rows,
                 pagination: {
-                    page,
-                    limit,
+                    page: pageNum,
+                    limit: limitNum,
                     total,
                     totalPages,
-                    hasNext: page < totalPages,
-                    hasPrev: page > 1
+                    hasNext: pageNum < totalPages,
+                    hasPrev: pageNum > 1
                 }
             };
         } catch (error) {
