@@ -445,7 +445,7 @@ class InventoryManager extends EventEmitter {
     // Additional method: Update product
     async updateProduct(productId, updates) {
         try {
-            const allowedFields = ['name', 'price', 'category'];
+            const allowedFields = ['name', 'price', 'category', 'stock'];
             const updateFields = [];
             const values = [];
 
