@@ -18,6 +18,15 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
   const [newTransaction, setNewTransaction] = useState({
     productId: "",
     customerId: "CUST001", // Default customer
@@ -30,13 +39,14 @@ export default function TransactionsPage() {
   useEffect(() => {
     fetchTransactions();
     fetchProducts();
-  }, []);
+  }, [currentPage]);
 
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getTransactions(1, 100);
+      const response = await apiService.getTransactions(currentPage, 10);
       setTransactions(response.history || []);
+      setPagination(response.pagination);
     } catch (error) {
       console.error("Error fetching transactions:", error);
     } finally {
@@ -241,6 +251,81 @@ export default function TransactionsPage() {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={!pagination.hasPrev}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={!pagination.hasNext}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing{" "}
+                  <span className="font-medium">
+                    {(pagination.page - 1) * pagination.limit + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium">
+                    {Math.min(
+                      pagination.page * pagination.limit,
+                      pagination.total
+                    )}
+                  </span>{" "}
+                  of <span className="font-medium">{pagination.total}</span>{" "}
+                  results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                  <button
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={!pagination.hasPrev}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  {Array.from(
+                    { length: pagination.totalPages },
+                    (_, i) => i + 1
+                  ).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        page === currentPage
+                          ? "z-10 bg-green-50 border-green-500 text-green-600"
+                          : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={!pagination.hasNext}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Transaction Modal */}
